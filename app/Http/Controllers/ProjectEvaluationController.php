@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Models\ProjectStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ProjectEvaluationController extends Controller
 {
@@ -140,11 +141,32 @@ class ProjectEvaluationController extends Controller
             }
         }
 
-        match ($validated['status']) {
-            'Aprobado' => IdeaApproved::dispatch($project),
-            'Rechazado' => IdeaRejected::dispatch($project),
-            'Devuelto para corrección' => IdeaNeedsRevision::dispatch($project),
-        };
+        $maxRetries = 3; // Número máximo de reintentos
+        $retryDelay = 1000; // Retraso entre reintentos en milisegundos
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                match ($validated['status']) {
+                    'Aprobado' => IdeaApproved::dispatch($project),
+                    'Rechazado' => IdeaRejected::dispatch($project),
+                    'Devuelto para corrección' => IdeaNeedsRevision::dispatch($project),
+                };
+                // Si el dispatch fue exitoso, salimos del bucle
+                break;
+            } catch (\Throwable $e) {
+                // Registrar el error (opcional, pero recomendado)
+                Log::warning("Intento {$attempt}/{$maxRetries} fallido al despachar evento para el proyecto {$project->id}: ".$e->getMessage());
+
+                // Si es el último intento, lanzamos la excepción
+                if ($attempt === $maxRetries) {
+                    // Lanzar la excepción original o una nueva exception más descriptiva
+                    throw new \Exception("Error al despachar el evento de evaluación para el proyecto '{$project->title}' después de {$maxRetries} intentos.");
+                }
+
+                // Esperar antes del siguiente reintento
+                usleep($retryDelay * 1000); // usleep espera en microsegundos
+            }
+        }
 
         return redirect()
             ->route('projects.evaluation.index')
