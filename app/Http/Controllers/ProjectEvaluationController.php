@@ -144,6 +144,7 @@ class ProjectEvaluationController extends Controller
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
+                Log::debug('Paso por aqui');
                 match ($validated['status']) {
                     'Aprobado' => IdeaGeneral::dispatch($project),
                     'Rechazado' => IdeaGeneral::dispatch($project),

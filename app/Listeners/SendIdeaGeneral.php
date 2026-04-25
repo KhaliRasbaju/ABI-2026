@@ -4,9 +4,11 @@ namespace App\Listeners;
 
 use App\Events\IdeaGeneral;
 use App\Mail\GeneralMail;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-class SendIdeaGeneral
+class SendIdeaGeneral implements ShouldQueue
 {
     /**
      * Create the event listener.
@@ -50,6 +52,7 @@ class SendIdeaGeneral
         }
 
         $recipients->unique('email')->each(function ($recipient) use ($project) {
+            Log::info($recipient['email']);
             Mail::to($recipient['email'])
                 ->send(new GeneralMail($project, $recipient));
         });

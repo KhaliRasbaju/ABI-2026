@@ -17,11 +17,11 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         Registered::class => [
-            IdeaGeneral::class => [
-                SendIdeaGeneral::class,
-            ],
         ],
 
+        IdeaGeneral::class => [
+            SendIdeaGeneral::class,
+        ],
     ];
 
     /**
